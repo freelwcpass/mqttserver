@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package iam;
+
+option go_package = "github.com/freelwcpass/iot-core/iam";
+
+// IAM service for device authentication and topic authorization.
+service IAM {
+  // Authenticate verifies the client ID and JWT token.
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+  // Authorize checks if the client can access a topic.
+  rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse);
+}
+
+message AuthenticateRequest {
+  string client_id = 1;
+  string token = 2;
+}
+
+message AuthenticateResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message AuthorizeRequest {
+  string client_id = 1;
+  string topic = 2;
+  bool write = 3;
+}
+
+message AuthorizeResponse {
+  bool allowed = 1;
+  string error = 2;
+}
