@@ -13,8 +13,10 @@ import (
 	"syscall"
 
 	mqtt "github.com/mochi-mqtt/server/v2"
-	"github.com/mochi-mqtt/server/v2/hooks/auth"
+	// "github.com/mochi-mqtt/server/v2/hooks/auth"
 	"github.com/mochi-mqtt/server/v2/listeners"
+
+	"github.com/freelwcpass/mqttserver/hooks"
 )
 
 func main() {
@@ -23,6 +25,7 @@ func main() {
 	infoAddr := flag.String("info", ":8080", "network address for web info dashboard listener")
 	tlsCertFile := flag.String("tls-cert-file", "", "TLS certificate file")
 	tlsKeyFile := flag.String("tls-key-file", "", "TLS key file")
+	iamAddr := flag.String("iam-addr", "localhost:50051", "IAM service gRPC address")
 	flag.Parse()
 
 	sigs := make(chan os.Signal, 1)
@@ -46,14 +49,26 @@ func main() {
 	}
 
 	server := mqtt.New(nil)
-	_ = server.AddHook(new(auth.AllowHook), nil)
+	// Initialize IAM authentication hook
+	iamHook, err := hooks.NewIAMAuthHook(*iamAddr)
+	if err != nil {
+		log.Fatalf("Failed to initialize IAM hook: %v", err)
+	}
+
+	// Add the authentication hook
+	err = server.AddHook(iamHook, nil)
+	if err != nil {
+		log.Fatalf("Failed to add IAM hook: %v", err)
+	}
+
+	// _ = server.AddHook(new(auth.AllowHook), nil)
 
 	tcp := listeners.NewTCP(listeners.Config{
 		ID:        "t1",
 		Address:   *tcpAddr,
 		TLSConfig: tlsConfig,
 	})
-	err := server.AddListener(tcp)
+	err = server.AddListener(tcp)
 	if err != nil {
 		log.Fatal(err)
 	}
